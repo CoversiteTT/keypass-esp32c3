@@ -4,6 +4,7 @@ This PlatformIO project runs on your ESP32-C3 OLED board and provides:
 
 - BLE HID keyboard output
 - UART air sensor parsing (`0x2C 0xE4 ...` frame)
+- I2C environment module support (AHT20 + BMP280)
 - OLED menu controlled by one touch button
 
 ## Controls
@@ -20,6 +21,9 @@ Menu tree:
 - `AIR`
   - choose `CO2`, `TVOC`, `HCHO`
   - long press to open full-screen chart for selected metric
+- `ENV`
+  - choose `TEMP`, `HUM`, `PRES`
+  - long press to open full-screen chart for selected metric
 - `SET`
   - `ENT`: auto Enter after BLE text send (`ON/OFF`)
   - `AIR`: default chart mode when entering AIR VIEW (`RT/HS`)
@@ -32,6 +36,12 @@ Menu tree:
   - single click: toggle `Realtime` / `History`
   - double click: back to `AIR` selection
   - long press: no BLE send (air data is display-only)
+- `ENV VIEW` (full-screen single metric)
+  - top line: current value + unit (`TEMP/HUM/PRES`)
+  - bottom area: trend chart + x-axis (left span / middle half-span / right `now`)
+  - single click: toggle `Realtime` / `History`
+  - double click: back to `ENV` selection
+  - long press: no BLE send (display-only)
 
 ## Data model
 
@@ -40,6 +50,7 @@ Menu tree:
 - History mode span: up to `48 hours`.
 - If history is shorter than 48h, span is from now to oldest recorded point.
 - Three metrics are stored independently: `CO2`, `TVOC`, `HCHO`.
+- Three ENV metrics are also stored independently: `TEMP`, `HUM`, `PRES`.
 
 Storage strategy:
 
@@ -86,6 +97,13 @@ Based on your board screenshot:
 - Use `RX/TX` pads for UART sensor.
 - Keep `GPIO5/GPIO6` for built-in OLED.
 
+### AHT20 + BMP280 module (new)
+
+- Module `SDA` -> `GPIO9`
+- Module `SCL` -> `GPIO7`
+- Uses I2C polling in firmware (`2s` interval)
+- Serial output includes `T/RH/P` when module data is valid
+
 ## UART Protocol
 
 - `9600 8N1`
@@ -129,6 +147,7 @@ BLE send now waits for a 1.2s ready window after connection to reduce notify err
 
 - `help` -> show command help
 - `status` -> print current BLE connection and auto-enter state
+- `env` -> print AHT20/BMP280 latest data
 - `send <text>` -> manually send text through BLE keyboard
 
 ## Main Config
@@ -138,4 +157,5 @@ Edit constants in `src/main.cpp`:
 - BLE name/manufacturer
 - touch timing (`LONG_PRESS_MS`, `DOUBLE_CLICK_MS`)
 - UART pins (`AIR_UART_RX_PIN`, `AIR_UART_TX_PIN`)
+- I2C pins (`OLED_*` and `ENV_I2C_*`)
 - key preset default macros (`KEY_PRESET_1/2/3_*`)
